@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Новогодний адвент</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <canvas id="snow" aria-hidden="true"></canvas>
+  <div class="pearls" aria-hidden="true">
+    <i style="left:6%;top:9%"></i><i style="left:88%;top:6%;--s:.7"></i>
+    <i style="left:93%;top:28%;--s:.6"></i><i style="left:4%;top:41%;--s:.5"></i>
+    <i style="left:96%;top:63%;--s:.8"></i><i style="left:7%;top:80%;--s:.6"></i>
+  </div>
+
+  <main class="app">
+    <header class="head">
+      <h1 id="title"></h1>
+      <p class="subtitle" id="subtitle"></p>
+    </header>
+
+    <section class="grid" id="grid"></section>
+
+    <p class="hint" id="hint"></p>
+
+    <footer class="foot">
+      <span>Новогодний адвент</span>
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="#fff" d="M12 0l1.6 8.4L20.5 3.5 15.6 10.4 24 12l-8.4 1.6 4.9 6.9-6.9-4.9L12 24l-1.6-8.4-6.9 4.9 4.9-6.9L0 12l8.4-1.6L3.5 3.5l6.9 4.9z"/></svg>
+      <span id="footSub"></span>
+    </footer>
+    <button class="reset" id="reset" hidden>Сбросить прогресс</button>
+  </main>
+
+  <!-- окно с содержимым коробочки -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-close></div>
+    <div class="sheet" role="dialog" aria-modal="true">
+      <button class="sheet__close" data-close aria-label="Закрыть">✕</button>
+      <div class="sheet__day" id="sheetDay"></div>
+      <div class="sheet__body" id="sheetBody"></div>
+      <canvas id="confetti"></canvas>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
