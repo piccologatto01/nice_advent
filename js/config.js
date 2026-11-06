@@ -42,7 +42,7 @@ window.ADVENT_CONFIG = {
   },
 
   tree: {
-    firebaseUrl: '',
+    firebaseUrl: 'https://nice-advent-default-rtdb.europe-west1.firebasedatabase.app',
     maxPerUser: 3,
   },
 
