@@ -18,8 +18,8 @@
       tg.ready();
       tg.expand();
       if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.1')) {
-        tg.setHeaderColor('#0c4434');
-        tg.setBackgroundColor('#08362a');
+        tg.setHeaderColor('#f6e7d4');
+        tg.setBackgroundColor('#24361f');
       }
       if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
     } catch (e) { /* вне Telegram — игнорируем */ }
@@ -386,7 +386,7 @@
     const W = sheet.clientWidth, H = sheet.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const colors = ['#e2262a', '#d6b26e', '#f4eedf', '#1d8a57', '#ffffff'];
+    const colors = ['#d7240c', '#9e2117', '#f6e7d4', '#d7edd2', '#75956f', '#f2cd5c', '#f6c1c0'];
     const parts = Array.from({ length: 120 }, () => ({
       x: W / 2, y: 70, vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 10 - 3,
       w: 5 + Math.random() * 6, h: 3 + Math.random() * 5, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4,
@@ -437,7 +437,51 @@
     toastT = setTimeout(() => el.classList.remove('show'), 2400);
   }
 
+
+  /* ---------------- заставка: календарь появляется из коробочки ---------------- */
+  function intro() {
+    const el = $('#intro');
+    if (!el) return;
+    const D = window.DECOR;
+    const lbl = Object.assign({
+      top: `${N} ${plural(N, 'сюрприз', 'сюрприза', 'сюрпризов')}`,
+      title: ['Адвент', 'календарь'],
+      bottom: 'то, что тебе нужно',
+    }, CFG.intro || {});
+    el.querySelector('.intro__paper').innerHTML = D.paper;
+    el.querySelector('.intro__sparks').innerHTML = D.introSparkles;
+    el.querySelector('.intro__box').innerHTML = D.introBox(lbl);
+    if (CFG.intro && CFG.intro.hint) el.querySelector('.intro__hint').textContent = CFG.intro.hint;
+    document.body.classList.add('is-intro');
+    if (tg) try { tg.setHeaderColor('#f6e7d4'); } catch (e) {}
+
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let done = false;
+    const open = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(auto);
+      haptic.impact('heavy');
+      el.classList.add('is-opening');
+      setTimeout(() => haptic.notify('success'), reduce ? 0 : 900);
+      setTimeout(() => {
+        document.body.classList.remove('is-intro');
+        document.body.classList.add('is-revealing');
+        if (tg) try { tg.setHeaderColor('#34492f'); } catch (e) {}
+      }, reduce ? 50 : 1250);
+      setTimeout(() => {
+        el.remove();
+        document.body.classList.remove('is-revealing');
+      }, reduce ? 400 : 2400);
+    };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') open(); });
+    const auto = setTimeout(open, (CFG.intro && CFG.intro.autoOpenMs) || 6000);
+  }
+
   /* ---------------- старт ---------------- */
+  window.ADVENT_UI = { tg, haptic, toast, plural, DEMO };
+  intro();
   renderHeader();
   renderGrid();
   storage.get(STORE_KEY).then((raw) => {

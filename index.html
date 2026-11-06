@@ -7,10 +7,18 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Marck+Script&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <!-- заставка: коробочка, из которой появляется календарь -->
+  <div class="intro" id="intro" role="button" tabindex="0" aria-label="Открыть коробочку">
+    <div class="intro__paper"></div>
+    <div class="intro__sparks"></div>
+    <div class="intro__box"></div>
+    <p class="intro__hint">нажми, чтобы открыть</p>
+  </div>
+
   <canvas id="snow" aria-hidden="true"></canvas>
   <div class="pearls" aria-hidden="true">
     <i style="left:6%;top:9%"></i><i style="left:88%;top:6%;--s:.7"></i>
@@ -27,6 +35,18 @@
     <section class="grid" id="grid"></section>
 
     <p class="hint" id="hint"></p>
+
+    <!-- общая ёлка -->
+    <section class="tree" id="tree">
+      <div class="wave" aria-hidden="true"></div>
+      <h2 class="tree__title"><span>наша</span>ёлка</h2>
+      <p class="tree__sub">Повесь до 3 игрушек — их увидят все, кто открыл адвент</p>
+      <p class="tree__count" id="treeCount"></p>
+      <div class="tree__stage" id="treeStage"></div>
+      <div class="tray" id="tray"></div>
+      <p class="tree__status" id="treeStatus"></p>
+      <p class="tree__local" id="treeLocal" hidden>Ёлка сейчас хранится только на этом устройстве. Чтобы игрушки видели все, подключите базу (см. README).</p>
+    </section>
 
     <footer class="foot">
       <span>Новогодний адвент</span>
@@ -51,6 +71,8 @@
 
   <script src="js/config.js"></script>
   <script src="js/art.js"></script>
+  <script src="js/decor.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/tree.js"></script>
 </body>
 </html>

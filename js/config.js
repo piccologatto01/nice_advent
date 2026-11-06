@@ -17,6 +17,14 @@
      globe    — снежный шар (финал): src (картинка внутри шара), title, text
 
    Оформление крышки (cover): bell | ornament | mitten | gift | star | deer | sparkle
+
+   intro — надписи на коробочке-заставке (top / title / bottom / hint) и
+           autoOpenMs — через сколько мс коробочка откроется сама.
+   tree  — общая ёлка с игрушками:
+           firebaseUrl — адрес Firebase Realtime Database, например
+                         'https://my-advent-default-rtdb.europe-west1.firebasedatabase.app'
+                         Пусто — ёлка хранится только на устройстве пользователя.
+           maxPerUser  — сколько игрушек может повесить один человек (до 3).
    ========================================================================= */
 
 window.ADVENT_CONFIG = {
@@ -24,6 +32,19 @@ window.ADVENT_CONFIG = {
   subtitle: '«От мечты к ели»',
   startDate: '2026-12-23',
   demo: false,
+
+  intro: {
+    top: '7 сюрпризов',
+    title: ['Адвент', 'календарь'],
+    bottom: 'то, что тебе нужно',
+    hint: 'нажми, чтобы открыть',
+    autoOpenMs: 6000,
+  },
+
+  tree: {
+    firebaseUrl: '',
+    maxPerUser: 3,
+  },
 
   days: [
     {
