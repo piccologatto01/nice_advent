@@ -19,7 +19,7 @@
       tg.expand();
       if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.1')) {
         tg.setHeaderColor('#f6e7d4');
-        tg.setBackgroundColor('#24361f');
+        tg.setBackgroundColor('#344b2f');
       }
       if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
     } catch (e) { /* вне Telegram — игнорируем */ }
@@ -350,7 +350,7 @@
       ctx.clearRect(0, 0, W, W);
       ctx.save();
       ctx.beginPath(); ctx.arc(R, R, R - 1, 0, Math.PI * 2); ctx.clip();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#f6e7d4';
       for (const f of flakes) {
         f.ph += 0.03;
         f.vx *= 0.97; f.vy = f.vy * 0.97 + 0.012;
@@ -386,7 +386,7 @@
     const W = sheet.clientWidth, H = sheet.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const colors = ['#d7240c', '#9e2117', '#f6e7d4', '#d7edd2', '#75956f', '#f2cd5c', '#f6c1c0'];
+    const colors = ['#d7240c', '#9e2117', '#f6e7d4', '#d7edd2', '#75956f', '#f6e7d4', '#f6e7d4'];
     const parts = Array.from({ length: 120 }, () => ({
       x: W / 2, y: 70, vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 10 - 3,
       w: 5 + Math.random() * 6, h: 3 + Math.random() * 5, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4,
@@ -417,7 +417,7 @@
     size(); addEventListener('resize', size);
     (function tick() {
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.fillStyle = 'rgba(246,231,212,.75)';
       for (const f of flakes) {
         f.y += f.s; f.p += 0.01; f.x += Math.sin(f.p) * 0.3;
         if (f.y > H + 4) { f.y = -4; f.x = Math.random() * W; }
@@ -467,7 +467,7 @@
       setTimeout(() => {
         document.body.classList.remove('is-intro');
         document.body.classList.add('is-revealing');
-        if (tg) try { tg.setHeaderColor('#34492f'); } catch (e) {}
+        if (tg) try { tg.setHeaderColor('#344b2f'); } catch (e) {}
       }, reduce ? 50 : 1250);
       setTimeout(() => {
         el.remove();
