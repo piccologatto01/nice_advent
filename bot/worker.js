@@ -111,6 +111,24 @@ function zodiac(date) {
   return z ? (d < z[0] ? z[1] : z[2]) : '';
 }
 
+/* ---------------- аватарка из публичного профиля Telegram ---------------- */
+const avatars = new Map();
+async function tgAvatar(nick) {
+  const h = handle(nick);
+  if (!/^[a-z0-9_]{4,32}$/.test(h)) return '';
+  const hit = avatars.get(h);
+  if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.url;
+  let url = '';
+  try {
+    const r = await fetch('https://t.me/' + h, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; TelegramBot)' } });
+    const html = await r.text();
+    const m = html.match(/<meta property="og:image" content="([^"]+)"/);
+    if (m && !/telegram\.org\/img\/t_logo/.test(m[1])) url = m[1].replace(/&amp;/g, '&');
+  } catch (e) { /* нет аватарки — покажем букву */ }
+  avatars.set(h, { at: Date.now(), url });
+  return url;
+}
+
 /* ---------------- ссылки ---------------- */
 const tgLink = (v) => (empty(v) ? '' : 'https://t.me/' + handle(v));
 const igLink = (v) => (empty(v) ? '' : 'https://instagram.com/' + handle(v));
@@ -220,7 +238,8 @@ export default {
       if (!canSee(env, rows, user)) return json({ error: 'forbidden' }, 403);
       const m = findMember(rows, body.u);
       if (!m) return json({ error: 'notfound' }, 404);
-      return json({ member: { ...m, telegramUrl: tgLink(m.telegram), instagramUrl: igLink(m.instagram) } });
+      const photo = empty(m.photo) ? await tgAvatar(m.telegram) : m.photo;
+      return json({ member: { ...m, photo, telegramUrl: tgLink(m.telegram), instagramUrl: igLink(m.instagram) } });
     }
 
     if (url.pathname === '/setup') {
@@ -244,31 +263,27 @@ const CARD_HTML = `<!DOCTYPE html>
   (function(){function p(t){try{if(window.TelegramWebviewProxy&&window.TelegramWebviewProxy.postEvent)window.TelegramWebviewProxy.postEvent(t,'{}');else if(window.parent!==window)window.parent.postMessage(JSON.stringify({eventType:t,eventData:{}}),'*');}catch(e){}}p('web_app_ready');p('web_app_expand');})();
 </script>
 <script src="https://telegram.org/js/telegram-web-app.js" async></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
-  :root{--ruby:#9e2117;--red:#d7240c;--cream:#f6e7d4;--mint:#d7edd2;--spruce:#75956f;--bg:#344b2f}
+  :root{--bg:#182633;--field:#28323e;--label:#8a94a0;--text:#eef1f4}
   *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--cream);font:500 15px/1.3 Manrope,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:440px;margin:0 auto;padding:16px 14px calc(24px + env(safe-area-inset-bottom))}
-  .card{background:rgba(23,34,20,.38);border-radius:22px;padding:14px;box-shadow:inset 0 0 0 1.5px rgba(215,237,210,.16)}
-  .head{display:flex;align-items:center;gap:12px;padding:2px 2px 14px}
-  .ava{width:56px;height:56px;border-radius:50%;flex:none;background:var(--red) center/cover;display:grid;place-items:center;font:800 24px 'Playfair Display',Georgia,serif;color:var(--cream);box-shadow:0 0 0 2px var(--mint)}
-  .nick{font:800 24px/1.05 'Playfair Display',Georgia,serif;margin:0}
-  .role{margin:3px 0 0;color:var(--spruce);font-weight:600;filter:brightness(1.35)}
-  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-  .f{grid-column:span 3;min-width:0;background:rgba(215,237,210,.1);border-radius:12px;padding:8px 10px 9px}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:500 13.5px/1.25 -apple-system,BlinkMacSystemFont,'SF Pro Text','Inter','Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:460px;margin:0 auto;padding:10px 8px calc(14px + env(safe-area-inset-bottom))}
+  .head{display:flex;align-items:center;gap:10px;padding:2px 2px 9px}
+  .ava{width:44px;height:44px;border-radius:50%;flex:none;background:#2f3c4b center/cover no-repeat;display:grid;place-items:center;font-weight:700;font-size:19px;color:var(--text)}
+  .nick{font-weight:700;font-size:16px;margin:0;letter-spacing:-.01em}
+  .role{margin:2px 0 0;color:var(--label);font-size:13px;font-weight:500}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+  .f{grid-column:span 3;min-width:0;background:var(--field);border-radius:9px;padding:6px 6px 7px}
   .f.third{grid-column:span 2}
-  .f.wide{grid-column:span 6}
-  .l{font-size:12.5px;color:var(--mint);opacity:.62;margin-bottom:3px}
-  .v{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  a.v{display:flex;gap:4px;color:var(--cream);text-decoration:none}
-  a.v span{min-width:0;overflow:hidden;text-overflow:ellipsis}
-  a.v::after{content:'↗';flex:none;color:var(--red);font-weight:700}
-  .f.link{background:rgba(215,36,12,.16);box-shadow:inset 0 0 0 1px rgba(215,36,12,.45)}
-  .f.link:active{transform:scale(.98)}
-  .msg{text-align:center;padding:60px 20px;color:var(--mint)}
-  .msg b{display:block;font:800 22px 'Playfair Display',Georgia,serif;color:var(--cream);margin-bottom:6px}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--cream);color:var(--ruby);font-weight:700;padding:10px 16px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none}
+  .f.gap{margin-top:4px}
+  .l{font-size:11.5px;color:var(--label);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  a.v{display:block;color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+  .f.link{cursor:pointer;transition:background .15s}
+  .f.link:active{background:#323d4a}
+  .msg{text-align:center;padding:60px 20px;color:var(--label)}
+  .msg b{display:block;font-size:18px;color:var(--text);margin-bottom:6px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#eef1f4;color:#182633;font-weight:600;padding:10px 16px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
   .toast.on{opacity:1;transform:translateX(-50%)}
 </style></head>
 <body><div class="wrap"><div id="root" class="msg">Загружаю карточку…</div></div><div class="toast" id="toast"></div>
@@ -281,7 +296,7 @@ const CARD_HTML = `<!DOCTYPE html>
   function fail(title,text){root.className='msg';root.innerHTML='<b>'+esc(title)+'</b>'+esc(text||'')}
   function field(label,value,cls,href,kind){
     var v=emp(value)?'-':value;
-    if(href&&!emp(value)) return '<div class="f link '+(cls||'')+'"><div class="l">'+esc(label)+'</div><a class="v" href="'+esc(href)+'" data-kind="'+kind+'" data-value="'+esc(value)+'"><span>'+esc(v)+'</span></a></div>';
+    if(href&&!emp(value)) return '<div class="f link '+(cls||'')+'" data-href="1"><div class="l">'+esc(label)+'</div><a class="v" href="'+esc(href)+'" data-kind="'+kind+'" data-value="'+esc(value)+'">'+esc(v)+'</a></div>';
     return '<div class="f '+(cls||'')+'"><div class="l">'+esc(label)+'</div><div class="v">'+esc(v)+'</div></div>';
   }
   function at(v){return emp(v)?v:'@'+String(v).replace(/^.*\\//,'').replace(/^@/,'')}
@@ -293,7 +308,7 @@ const CARD_HTML = `<!DOCTYPE html>
     root.innerHTML='<div class="head">'+ava+'<div><p class="nick">'+esc(name)+'</p>'+(emp(m.role)?'':'<p class="role">'+esc(m.role)+'</p>')+'</div></div>'+
       '<div class="grid">'+
       field('Фамилия',m.last,'third')+field('Имя',m.first,'third')+field('Отчество',m.middle,'third')+
-      field('Дата рождения',m.birth)+field('Знак зодиака',m.zodiac)+
+      field('Дата рождения',m.birth,'gap')+field('Знак зодиака',m.zodiac,'gap')+
       field('Группа',m.group)+field('Форма обучения',m.form)+
       field('Телефон',m.phone,'',emp(m.phone)?'':'tel:'+String(m.phone).replace(/[^+\\d]/g,''),'tel')+field('Почта',m.email,'','mailto:'+m.email,'mail')+
       field('Инстаграм',at(m.instagram),'',m.instagramUrl,'ig')+field('Телеграм',at(m.telegram),'',m.telegramUrl,'tg')+
@@ -302,16 +317,17 @@ const CARD_HTML = `<!DOCTYPE html>
       '</div>';
   }
   document.addEventListener('click',function(e){
-    var a=e.target.closest('a.v'); if(!a) return;
+    var box=e.target.closest('.f.link'); if(!box) return;
+    var a=box.querySelector('a.v'); if(e.target!==a){ e.preventDefault(); }
     var tg=window.Telegram&&window.Telegram.WebApp, kind=a.dataset.kind, href=a.getAttribute('href');
-    if(kind==='mail'||kind==='tel'){ try{navigator.clipboard.writeText(a.dataset.value);toast('Скопировано: '+a.dataset.value)}catch(_){} return; }
-    if(!tg||!tg.initData) return;
+    if(kind==='mail'||kind==='tel'){ try{navigator.clipboard.writeText(a.dataset.value);toast('Скопировано: '+a.dataset.value)}catch(_){} if(e.target!==a) location.href=href; return; }
     e.preventDefault();
+    if(!tg||!tg.initData){ window.open(href,'_blank'); return; }
     if(kind==='tg'&&tg.openTelegramLink) tg.openTelegramLink(href); else if(tg.openLink) tg.openLink(href);
   });
   function start(){
     var tg=window.Telegram&&window.Telegram.WebApp;
-    if(tg){try{tg.ready();tg.expand();tg.setHeaderColor('#344b2f');tg.setBackgroundColor('#344b2f')}catch(e){}}
+    if(tg){try{tg.ready();tg.expand();tg.setHeaderColor('#182633');tg.setBackgroundColor('#182633')}catch(e){}}
     var initData=tg&&tg.initData;
     if(!initData) return fail('Открой карточку в Telegram','Страница работает только из бота.');
     var u=new URLSearchParams(location.search).get('u')||'';
