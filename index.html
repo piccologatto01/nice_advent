@@ -4,11 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Новогодний адвент</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    /* Сразу говорим Telegram «мини-апп готова», не дожидаясь его скрипта:
+       если telegram.org не грузится (например, без VPN), иначе висит вечная загрузка. */
+    (function () {
+      function post(type, data) {
+        data = data || {};
+        try {
+          if (window.TelegramWebviewProxy && window.TelegramWebviewProxy.postEvent) {
+            window.TelegramWebviewProxy.postEvent(type, JSON.stringify(data));
+          } else if (window.external && 'notify' in window.external) {
+            window.external.notify(JSON.stringify({ eventType: type, eventData: data }));
+          } else if (window.parent !== window) {
+            window.parent.postMessage(JSON.stringify({ eventType: type, eventData: data }), '*');
+          }
+        } catch (e) {}
+      }
+      post('web_app_ready');
+      post('web_app_expand');
+
+      // скрипт Telegram грузим в фоне и ждём не дольше 2,5 секунды
+      window.__tgSdk = new Promise(function (done) {
+        var s = document.createElement('script');
+        s.src = 'https://telegram.org/js/telegram-web-app.js';
+        s.onload = s.onerror = done;
+        document.head.appendChild(s);
+        setTimeout(done, 2500);
+      });
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,600;1,700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4" />
+  <!-- шрифты не блокируют показ страницы: пока не загрузились — системные -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,600;1,700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
 </head>
 <body>
   <!-- заставка: коробочка, из которой появляется календарь -->
@@ -69,10 +98,24 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/config.js?v=4"></script>
-  <script src="js/art.js?v=4"></script>
-  <script src="js/decor.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
-  <script src="js/tree.js?v=4"></script>
+  <script>
+    (function () {
+      var V = '5';
+      var files = ['js/config.js', 'js/art.js', 'js/decor.js', 'js/app.js', 'js/tree.js'];
+      function next() {
+        var f = files.shift();
+        if (!f) return;
+        var s = document.createElement('script');
+        s.src = f + '?v=' + V;
+        s.onload = next;
+        s.onerror = next;
+        document.body.appendChild(s);
+      }
+      var started = false;
+      function go() { if (!started) { started = true; next(); } }
+      window.__tgSdk.then(go);
+      setTimeout(go, 3000);
+    })();
+  </script>
 </body>
 </html>

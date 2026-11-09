@@ -32,15 +32,22 @@
   const shared = !!base;
   const LOCAL_KEY = 'advent_tree_local';
 
+  // запрос с таймаутом, чтобы ёлка не «висела», если база недоступна
+  function fetchT(url, opts, ms = 8000) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    return fetch(url, { ...(opts || {}), signal: ctl.signal }).finally(() => clearTimeout(t));
+  }
+
   const store = shared
     ? {
         async load() {
-          const r = await fetch(`${base}/ornaments.json`, { cache: 'no-store' });
+          const r = await fetchT(`${base}/ornaments.json`, { cache: 'no-store' });
           if (!r.ok) throw new Error('load ' + r.status);
           return flatten(await r.json());
         },
         async put(slot, o) {
-          const r = await fetch(`${base}/ornaments/${encodeURIComponent(me.id)}/${slot}.json`, {
+          const r = await fetchT(`${base}/ornaments/${encodeURIComponent(me.id)}/${slot}.json`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(o),
           });
           if (!r.ok) throw new Error('put ' + r.status);
