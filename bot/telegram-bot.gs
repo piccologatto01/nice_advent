@@ -61,12 +61,14 @@ function setup() {
 
 /* ===================== входящие запросы ===================== */
 
-// Telegram присылает сообщения сюда
+// Telegram присылает сообщения сюда.
+// Отвечаем через HtmlService: ответ ContentService приходит перенаправлением (302), Telegram считает это
+// ошибкой и повторяет то же сообщение, а следующие сообщения ждут в очереди.
 function doPost(e) {
   const P = PropertiesService.getScriptProperties();
-  if (!e || !e.parameter || e.parameter.s !== P.getProperty('SECRET')) return text_('forbidden');
+  if (!e || !e.parameter || e.parameter.s !== P.getProperty('SECRET')) return ok_();
   let upd;
-  try { upd = JSON.parse(e.postData.contents); } catch (err) { return text_('ok'); }
+  try { upd = JSON.parse(e.postData.contents); } catch (err) { return ok_(); }
 
   // Telegram может прислать одно и то же обновление повторно — отвечаем один раз
   const lock = LockService.getScriptLock();
@@ -76,10 +78,10 @@ function doPost(e) {
   const seen = cache.get(key);
   if (!seen) cache.put(key, '1', 21600);
   lock.releaseLock();
-  if (seen) return text_('ok');
+  if (seen) return ok_();
 
   try { if (upd.message) onMessage_(upd.message); } catch (err) { console.error(err); }
-  return text_('ok');
+  return ok_();
 }
 
 // card.html запрашивает данные карточки: ?action=member&u=ник&initData=…
@@ -297,6 +299,7 @@ function esc_(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function
 function tgLink_(v) { return empty_(v) ? '' : 'https://t.me/' + handle_(v); }
 function igLink_(v) { return empty_(v) ? '' : 'https://instagram.com/' + handle_(v); }
 function at_(v) { return empty_(v) ? '' : '@' + handle_(v); }
+function ok_() { return HtmlService.createHtmlOutput('ok'); }
 function text_(s) { return ContentService.createTextOutput(s); }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
