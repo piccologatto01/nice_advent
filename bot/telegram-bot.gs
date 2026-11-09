@@ -299,3 +299,6 @@ function igLink_(v) { return empty_(v) ? '' : 'https://instagram.com/' + handle_
 function at_(v) { return empty_(v) ? '' : '@' + handle_(v); }
 function text_(s) { return ContentService.createTextOutput(s); }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+// Диагностика: статус webhook в Telegram (запустить из редактора, смотреть журнал)
+function webhookInfo() { Logger.log(JSON.stringify(tg_('getWebhookInfo', {}))); }
