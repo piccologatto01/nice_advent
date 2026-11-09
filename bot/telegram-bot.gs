@@ -17,11 +17,35 @@
 const DEFAULT_ADVENT_URL = 'https://piccologatto01.github.io/nice_advent/';
 const DEFAULT_CARD_URL = 'https://piccologatto01.github.io/nice_advent/card.html';
 const SHEET_NAME = ''; // пусто — первый лист
+// ID таблицы (из её адреса docs.google.com/spreadsheets/d/<ID>/edit). Нужен, только если скрипт
+// создан отдельно, а не через «Расширения → Apps Script» в самой таблице. Можно задать и свойством SHEET_ID.
+const SHEET_ID = '';
+
+function book_() {
+  const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID') || SHEET_ID;
+  return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+}
 
 /* ===================== настройка ===================== */
 
 // Запустите один раз из редактора (кнопка «Выполнить» с выбранной функцией setup).
+const HEADERS_ = ['Ник', 'Роль', 'Фамилия', 'Имя', 'Отчество', 'Дата рождения', 'Знак зодиака', 'Группа', 'Форма обучения',
+  'Телефон', 'Почта', 'Инстаграм', 'Телеграм', 'Размер', 'Метро', 'Дата вступления', 'Дата ухода', 'Фото'];
+
+// Если лист пустой — создаёт строку заголовков
+function ensureHeaders_() {
+  const book = book_();
+  const sheet = SHEET_NAME ? book.getSheetByName(SHEET_NAME) : book.getSheets()[0];
+  if (sheet.getLastRow() === 0 || String(sheet.getRange(1, 1).getValue()).trim() === '') {
+    sheet.getRange(1, 1, 1, HEADERS_.length).setValues([HEADERS_]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    sheet.getRange('A:Z').setNumberFormat('@'); // всё как текст: даты и телефоны не «портятся»
+    Logger.log('Создала заголовки таблицы');
+  }
+}
+
 function setup() {
+  ensureHeaders_();
   const P = PropertiesService.getScriptProperties();
   if (!P.getProperty('BOT_TOKEN')) throw new Error('Добавьте свойство скрипта BOT_TOKEN');
   const url = P.getProperty('WEBAPP_URL');
@@ -159,7 +183,7 @@ function loadMembers_(fresh) {
     const hit = cache.get('members');
     if (hit) return JSON.parse(hit);
   }
-  const book = SpreadsheetApp.getActiveSpreadsheet();
+  const book = book_();
   const sheet = SHEET_NAME ? book.getSheetByName(SHEET_NAME) : book.getSheets()[0];
   const values = sheet.getDataRange().getDisplayValues();
   const head = values[0].map(function (h) { return String(h).trim().toLowerCase(); });
