@@ -134,7 +134,7 @@ function onMessage_(msg) {
   const markup = { inline_keyboard: [[{ text: '🪪 Открыть карточку', web_app: { url: cardUrl } }]] };
 
   // 1) HTML-виджет (Bot API 10.4): карточка с собственной вёрсткой прямо в чате
-  const w = tg_('sendWidget', { chat_id: msg.chat.id, html: memberWidget_(m) });
+  const w = tg_('sendWidget', { chat_id: msg.chat.id, html: fitWidget_(m) });
   if (w && w.ok) return w;
   console.warn('sendWidget: ' + JSON.stringify(w));
 
@@ -150,39 +150,103 @@ function onMessage_(msg) {
 }
 
 // HTML-виджет карточки (как на скриншоте анкеты). Ограничения Telegram: ≤32 КБ, ≤4 КБ в сжатом виде,
-// без загрузки из сети; ссылки — через TelegramWidget.openLink / openTelegramLink.
-function memberWidget_(m) {
+// без загрузки из сети (картинки только data:); ссылки — через TelegramWidget.openLink / openTelegramLink.
+// Сетка: 3 равные колонки, все отступы одинаковые (G), широкие ячейки занимают ровно 2 колонки + промежуток.
+function memberWidget_(m, prof) {
+  const G = 8;
+  prof = prof || {};
   const v = function (x) { return empty_(x) ? '-' : esc_(x); };
-  const f = function (label, value, cls, href) {
+  // c(label, value, span, href)
+  const c = function (label, value, span, href) {
     const a = href && !empty_(value) ? ' data-l="' + esc_(href) + '"' : '';
-    return '<div class="f' + (cls ? ' ' + cls : '') + (a ? ' k' : '') + '"' + a + '><div class="l">' + label + '</div><div class="v">' + v(value) + '</div></div>';
+    return '<div class="c' + (span === 2 ? ' s' : '') + '"><div class="f' + (a ? ' k' : '') + '"' + a + '>' +
+      '<div class="l">' + label + '</div><div class="v">' + v(value) + '</div></div></div>';
   };
   const row = function () { return '<div class="r">' + Array.prototype.join.call(arguments, '') + '</div>'; };
-  const title = title_(m);
-  const letter = esc_((m.first || title.replace('@', '') || '?').charAt(0).toUpperCase());
+  const name = prof.name || [m.first, m.last].filter(function (x) { return !empty_(x); }).join(' ') || at_(m.telegram) || 'Участник';
+  const sub = [empty_(m.telegram) ? '' : at_(m.telegram), empty_(m.role) ? '' : m.role].filter(String).join(' · ');
+  const ava = prof.photo
+    ? '<div class="a" style="background-image:url(' + prof.photo + ')"></div>'
+    : '<div class="a">' + esc_(name.replace('@', '').charAt(0).toUpperCase() || '?') + '</div>';
   const phone = empty_(m.phone) ? '' : 'tel:' + String(m.phone).replace(/[^+\d]/g, '');
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
-    'body{margin:0;background:#182633;color:#eef1f4;font:500 13px/1.25 -apple-system,system-ui,Roboto,sans-serif}' +
-    '.w{padding:10px 8px}.h{display:flex;align-items:center;padding:0 2px 9px}' +
-    '.a{width:42px;height:42px;border-radius:21px;background:#2f3c4b;color:#eef1f4;font-weight:700;font-size:18px;text-align:center;line-height:42px;margin-right:10px}' +
-    '.n{font-weight:700;font-size:16px}.ro{color:#8a94a0;font-size:13px;margin-top:2px}' +
-    '.r{display:flex;margin-bottom:5px}.f{flex:1;min-width:0;background:#28323e;border-radius:9px;padding:6px 6px 7px;margin-right:5px}.f:last-child{margin-right:0}' +
-    '.g{margin-top:9px}.l{font-size:11px;color:#8a94a0;margin-bottom:4px}.v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k{cursor:pointer}' +
+    '*{box-sizing:border-box}html,body{margin:0}' +
+    'body{background:#182633;color:#eef1f4;font:500 14px/1.25 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}' +
+    '.w{padding:' + G + 'px}' +
+    '.h{display:flex;align-items:center;margin-bottom:' + G + 'px}' +
+    '.a{flex:none;width:48px;height:48px;border-radius:24px;margin-right:12px;background:#2f3c4b center/cover no-repeat;' +
+    'font-weight:700;font-size:20px;line-height:48px;text-align:center}' +
+    '.t{min-width:0}.n{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.u{color:#8a94a0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.r{display:flex}.r+.r{margin-top:' + G + 'px}' +
+    '.c{flex:1 1 0;min-width:0;margin-left:' + G + 'px}.c:first-child{margin-left:0}.s{flex:2 1 ' + G + 'px}' +
+    '.f{height:100%;background:#28323e;border-radius:12px;padding:8px 10px 9px}' +
+    '.l{font-size:12px;line-height:15px;height:15px;color:#8a94a0;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.v{line-height:18px;height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k{cursor:pointer}' +
     '</style></head><body><div class="w">' +
-    '<div class="h"><div class="a">' + letter + '</div><div><div class="n">' + esc_(title) + '</div>' + (empty_(m.role) ? '' : '<div class="ro">' + esc_(m.role) + '</div>') + '</div></div>' +
-    row(f('Фамилия', m.last), f('Имя', m.first), f('Отчество', m.middle)) +
-    '<div class="g"></div>' +
-    row(f('Дата рождения', m.birth), f('Знак зодиака', m.zodiac)) +
-    row(f('Группа', m.group), f('Форма обучения', m.form)) +
-    row(f('Телефон', m.phone, '', phone), f('Почта', m.email, '', empty_(m.email) ? '' : 'mailto:' + m.email)) +
-    row(f('Инстаграм', at_(m.instagram), '', igLink_(m.instagram)), f('Телеграм', at_(m.telegram), '', tgLink_(m.telegram))) +
-    row(f('Размер', m.size), f('Метро', m.metro)) +
-    row(f('Дата вступления', m.joined), f('Дата ухода', m.left)) +
+    '<div class="h">' + ava + '<div class="t"><div class="n">' + esc_(name) + '</div>' +
+    (sub ? '<div class="u"' + (empty_(m.telegram) ? '' : ' data-l="' + esc_(tgLink_(m.telegram)) + '"') + '>' + esc_(sub) + '</div>' : '') +
+    '</div></div>' +
+    row(c('Фамилия', m.last), c('Имя', m.first), c('Отчество', m.middle)) +
+    row(c('Дата рождения', m.birth), c('Знак зодиака', m.zodiac), c('Группа', m.group)) +
+    row(c('Форма обучения', m.form), c('Размер', m.size), c('Метро', m.metro)) +
+    row(c('Телефон', m.phone, 1, phone), c('Почта', m.email, 2, empty_(m.email) ? '' : 'mailto:' + m.email)) +
+    row(c('Инстаграм', at_(m.instagram), 1, igLink_(m.instagram)), c('Дата вступления', m.joined), c('Дата ухода', m.left)) +
     '</div><script>' +
     'document.querySelectorAll("[data-l]").forEach(function(e){e.addEventListener("click",function(){' +
     'var u=e.getAttribute("data-l"),W=window.TelegramWidget;if(!W)return;' +
     'try{if(u.indexOf("https://t.me/")===0&&W.openTelegramLink)W.openTelegramLink(u);else W.openLink(u)}catch(x){}})})' +
     '</script></body></html>';
+}
+
+// Виджет с фото, если влезает в лимит (4 КБ в сжатом виде), иначе — с буквой вместо фото
+function fitWidget_(m) {
+  const prof = tgProfile_(m.telegram);
+  if (prof.photo) {
+    const html = memberWidget_(m, prof);
+    if (deflatedSize_(html) <= 3900 && Utilities.newBlob(html).getBytes().length <= 32000) return html;
+  }
+  return memberWidget_(m, { name: prof.name });
+}
+
+function deflatedSize_(s) {
+  // gzip ≈ deflate + 18 байт заголовка
+  return Utilities.gzip(Utilities.newBlob(s)).getBytes().length - 18;
+}
+
+// Имя из профиля и маленькая аватарка (data:) по публичной странице t.me/ник; кэш 6 часов
+function tgProfile_(nick) {
+  const h = handle_(nick);
+  if (!/^[a-z0-9_]{4,32}$/.test(h)) return {};
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get('prof_' + h);
+  if (hit) return JSON.parse(hit);
+  const out = {};
+  try {
+    const html = UrlFetchApp.fetch('https://t.me/' + h, { muteHttpExceptions: true }).getContentText();
+    const t = html.match(/<meta property="og:title" content="([^"]*)"/);
+    if (t) out.name = decodeEntities_(t[1]).trim();
+    if (out.name && /^telegram:/i.test(out.name)) delete out.name;
+    const img = html.match(/<meta property="og:image" content="([^"]+)"/);
+    if (img && !/telegram\.org\/img\/t_logo/.test(img[1])) {
+      const src = decodeEntities_(img[1]);
+      // уменьшаем фото до 96×96 через images.weserv.nl, чтобы влезть в лимит виджета
+      const r = UrlFetchApp.fetch('https://wsrv.nl/?url=' + encodeURIComponent(src) + '&w=96&h=96&fit=cover&output=jpg&q=50',
+        { muteHttpExceptions: true });
+      if (r.getResponseCode() === 200) {
+        const bytes = r.getBlob().getBytes();
+        if (bytes.length <= 2600) out.photo = 'data:image/jpeg;base64,' + Utilities.base64Encode(bytes);
+      }
+    }
+  } catch (err) { /* без имени и фото */ }
+  try { cache.put('prof_' + h, JSON.stringify(out), 21600); } catch (err) { /* слишком большое — не кэшируем */ }
+  return out;
+}
+
+function decodeEntities_(s) {
+  return String(s).replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(+n); })
+    .replace(/&#x([0-9a-f]+);/gi, function (_, n) { return String.fromCharCode(parseInt(n, 16)); })
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 }
 
 // HTML для Rich Message: заголовок, роль, фото и таблица полей
