@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Переход…</title>
+<!-- Переходник для HTML-виджета бота: виджет может открывать только https-ссылки,
+     а эта страница перекидывает на звонок (?tel=…) или письмо (?mail=…). -->
+<style>
+  html,body{margin:0;min-height:100%;background:#fff;color:#2a2f45;font:500 16px/1.35 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+  .w{max-width:420px;margin:0 auto;padding:40px 20px;text-align:center}
+  .i{width:72px;height:72px;border-radius:36px;margin:0 auto 16px;background:#fdedf3;border:2px solid #9cc2f2;font-size:34px;line-height:72px}
+  .v{font-weight:700;font-size:20px;word-break:break-all;margin-bottom:24px}
+  a.b{display:block;padding:14px;border-radius:14px;background:#5a8ad6;color:#fff;text-decoration:none;font-weight:700;margin-bottom:10px}
+  button.c{display:block;width:100%;padding:13px;border-radius:14px;border:0;background:#fdedf3;color:#d0507e;font:inherit;font-weight:700}
+  .e{color:#d0507e}
+</style>
+</head>
+<body>
+<div class="w" id="root"></div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var tel = (q.get('tel') || '').replace(/[^+\d]/g, '');
+  var mail = (q.get('mail') || '').trim();
+  var root = document.getElementById('root');
+  var href, icon, label, value;
+  if (tel && /^\+?\d{5,15}$/.test(tel)) {
+    href = 'tel:' + tel; icon = '📞'; label = 'Позвонить'; value = tel;
+  } else if (mail && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(mail) && mail.length <= 120) {
+    href = 'mailto:' + mail; icon = '✉️'; label = 'Написать письмо'; value = mail;
+  } else {
+    root.innerHTML = '<div class="i">🤔</div><div class="e">Неверная ссылка</div>';
+    return;
+  }
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  document.title = label;
+  root.innerHTML = '<div class="i">' + icon + '</div><div class="v">' + esc(value) + '</div>' +
+    '<a class="b" href="' + esc(href) + '">' + label + '</a><button class="c" id="copy">Скопировать</button>';
+  document.getElementById('copy').onclick = function () {
+    var b = this;
+    (navigator.clipboard ? navigator.clipboard.writeText(value) : Promise.reject()).then(function () { b.textContent = 'Скопировано ✓'; }, function () {
+      var t = document.createElement('textarea'); t.value = value; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); b.textContent = 'Скопировано ✓'; } catch (e) {}
+      t.remove();
+    });
+  };
+  // сразу пробуем перейти; если браузер не пустит без нажатия — останется кнопка
+  setTimeout(function () { location.href = href; }, 150);
+})();
+</script>
+</body>
+</html>

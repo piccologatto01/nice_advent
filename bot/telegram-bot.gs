@@ -16,6 +16,8 @@
 
 const DEFAULT_ADVENT_URL = 'https://piccologatto01.github.io/nice_advent/';
 const DEFAULT_CARD_URL = 'https://piccologatto01.github.io/nice_advent/card.html';
+// Переходник для звонка/письма: виджет открывает только https-ссылки (свойство GO_URL переопределяет)
+const DEFAULT_GO_URL = 'https://piccologatto01.github.io/nice_advent/go.html';
 const SHEET_NAME = ''; // пусто — первый лист
 // ID таблицы (из её адреса docs.google.com/spreadsheets/d/<ID>/edit). Нужен, только если скрипт
 // создан отдельно, а не через «Расширения → Apps Script» в самой таблице. Можно задать и свойством SHEET_ID.
@@ -170,7 +172,9 @@ function memberWidget_(m, prof) {
   const ava = prof.photo
     ? '<div class="a" style="background-image:url(' + prof.photo + ')"></div>'
     : '<div class="a">' + esc_(name.replace('@', '').charAt(0).toUpperCase() || '?') + '</div>';
-  const phone = empty_(m.phone) ? '' : 'tel:' + String(m.phone).replace(/[^+\d]/g, '');
+  const go = PropertiesService.getScriptProperties().getProperty('GO_URL') || DEFAULT_GO_URL;
+  const phone = empty_(m.phone) ? '' : go + '?tel=' + encodeURIComponent(callable_(m.phone));
+  const mailGo = empty_(m.email) ? '' : go + '?mail=' + encodeURIComponent(String(m.email).trim());
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
     '*{box-sizing:border-box}html,body{margin:0}' +
     'body{background:#ffffff;color:#2a2f45;font:500 14px/1.25 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}' +
@@ -192,7 +196,7 @@ function memberWidget_(m, prof) {
     row(c('Фамилия', m.last), c('Имя', m.first), c('Отчество', m.middle)) +
     row(c('Дата рождения', m.birth), c('Знак зодиака', m.zodiac), c('Группа', m.group)) +
     row(c('Обучение', m.form), c('Размер', m.size), c('Метро', m.metro)) +
-    row(c('Телефон', m.phone, 1, phone), c('Почта', m.email, 2, empty_(m.email) ? '' : 'mailto:' + m.email)) +
+    row(c('Телефон', m.phone, 1, phone), c('Почта', m.email, 2, mailGo)) +
     row(c('Инстаграм', at_(m.instagram), 1, igLink_(m.instagram)), c('Вступление', m.joined), c('Уход', m.left)) +
     '</div><script>' +
     'document.querySelectorAll("[data-l]").forEach(function(e){e.addEventListener("click",function(){' +
@@ -430,6 +434,13 @@ function handle_(v) {
 }
 function empty_(v) { v = String(v == null ? '' : v).trim(); return v === '' || v === '-' || v === '—'; }
 function esc_(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+// номер для звонка: только цифры и «+», 8XXXXXXXXXX → +7XXXXXXXXXX
+function callable_(v) {
+  let d = String(v || '').replace(/[^+\d]/g, '');
+  if (/^8\d{10}$/.test(d)) d = '+7' + d.slice(1);
+  if (/^7\d{10}$/.test(d)) d = '+' + d;
+  return d;
+}
 function tgLink_(v) { return empty_(v) ? '' : 'https://t.me/' + handle_(v); }
 function igLink_(v) { return empty_(v) ? '' : 'https://instagram.com/' + handle_(v); }
 // заголовок карточки: Telegram-ник, а если его нет — имя и фамилия
