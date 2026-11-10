@@ -29,7 +29,7 @@ function book_() {
 /* ===================== настройка ===================== */
 
 // Запустите один раз из редактора (кнопка «Выполнить» с выбранной функцией setup).
-const HEADERS_ = ['Ник', 'Роль', 'Фамилия', 'Имя', 'Отчество', 'Дата рождения', 'Знак зодиака', 'Группа', 'Форма обучения',
+const HEADERS_ = ['Роль', 'Фамилия', 'Имя', 'Отчество', 'Дата рождения', 'Знак зодиака', 'Группа', 'Форма обучения',
   'Телефон', 'Почта', 'Инстаграм', 'Телеграм', 'Размер', 'Метро', 'Дата вступления', 'Дата ухода', 'Фото'];
 
 // Если лист пустой — создаёт строку заголовков
@@ -151,7 +151,7 @@ function memberRich_(m, photo) {
   const v = function (x) { return empty_(x) ? '—' : esc_(x); };
   const link = function (url, label) { return empty_(label) ? '—' : '<a href="' + esc_(url) + '">' + esc_(label) + '</a>'; };
   const row = function (label, value) { return '<tr><th>' + label + '</th><td>' + value + '</td></tr>'; };
-  let h = '<h2>' + esc_(m.nick || fio || 'Участник') + '</h2>';
+  let h = '<h2>' + esc_(title_(m)) + '</h2>';
   if (!empty_(m.role)) h += '<p><i>' + esc_(m.role) + '</i></p>';
   if (photo) h += '<img src="' + esc_(photo) + '">';
   h += '<table>' +
@@ -170,8 +170,8 @@ function memberRich_(m, photo) {
 function memberMessage_(m) {
   const line = function (icon, label, value) { return empty_(value) ? '' : icon + ' <b>' + label + ':</b> ' + value + '\n'; };
   const fio = [m.last, m.first, m.middle].filter(function (x) { return !empty_(x); }).join(' ');
-  let t = '<b>' + esc_(m.nick || fio || 'Участник') + '</b>' + (empty_(m.role) ? '' : ' · <i>' + esc_(m.role) + '</i>') + '\n';
-  if (fio && m.nick) t += esc_(fio) + '\n';
+  let t = '<b>' + esc_(title_(m)) + '</b>' + (empty_(m.role) ? '' : ' · <i>' + esc_(m.role) + '</i>') + '\n';
+  if (fio && !empty_(m.telegram)) t += esc_(fio) + '\n';
   t += '\n';
   t += line('🎂', 'Дата рождения', empty_(m.birth) ? '' : esc_(m.birth) + (empty_(m.zodiac) ? '' : ' (' + esc_(m.zodiac) + ')'));
   t += line('🎓', 'Группа', [m.group, m.form].filter(function (x) { return !empty_(x); }).map(esc_).join(' · '));
@@ -189,7 +189,6 @@ function memberMessage_(m) {
 /* ===================== таблица ===================== */
 
 const COLUMNS_ = {
-  nick: ['ник', 'никнейм', 'прозвище'],
   role: ['роль', 'должность', 'статус'],
   last: ['фамилия'],
   first: ['имя'],
@@ -239,7 +238,6 @@ function findMember_(rows, query) {
   const h = handle_(q), lq = q.toLowerCase();
   return rows.find(function (m) { return handle_(m.telegram) === h; })
     || rows.find(function (m) { return handle_(m.instagram) === h; })
-    || rows.find(function (m) { return m.nick && m.nick.toLowerCase() === lq; })
     || rows.find(function (m) { return m.last && m.last.toLowerCase() === lq; })
     || null;
 }
@@ -328,6 +326,11 @@ function empty_(v) { v = String(v == null ? '' : v).trim(); return v === '' || v
 function esc_(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function tgLink_(v) { return empty_(v) ? '' : 'https://t.me/' + handle_(v); }
 function igLink_(v) { return empty_(v) ? '' : 'https://instagram.com/' + handle_(v); }
+// заголовок карточки: Telegram-ник, а если его нет — имя и фамилия
+function title_(m) {
+  if (!empty_(m.telegram)) return at_(m.telegram);
+  return [m.first, m.last].filter(function (x) { return !empty_(x); }).join(' ') || 'Участник';
+}
 function at_(v) { return empty_(v) ? '' : '@' + handle_(v); }
 function ok_() { return HtmlService.createHtmlOutput('ok'); }
 function text_(s) { return ContentService.createTextOutput(s); }

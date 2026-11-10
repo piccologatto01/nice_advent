@@ -45,7 +45,7 @@
   }
   function at(v){return emp(v)?v:'@'+String(v).replace(/^.*\//,'').replace(/^@/,'')}
   function render(m){
-    var name=m.nick||[m.first,m.last].filter(Boolean).join(' ')||'Участник';
+    var name=!emp(m.telegram)?at(m.telegram):([m.first,m.last].filter(function(x){return !emp(x)}).join(' ')||'Участник');
     var ava=m.photo?'<div class="ava" style="background-image:url(\''+esc(m.photo)+'\')"></div>':'<div class="ava">'+esc(name.charAt(0).toUpperCase())+'</div>';
     document.title=name;
     root.className='card';
