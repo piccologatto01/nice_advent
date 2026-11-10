@@ -3,7 +3,7 @@
  *
  * Каждое утро бот проходит по листам контент-плана (там, где есть «Стадия работы»), находит задачи
  * «Текст» / «Вычитка» / «Дизайн» с дедлайном через 3 дня, завтра или сегодня и присылает админам
- * (REMIND_ADMINS) готовые сообщения — по одному на человека, чтобы их было удобно переслать.
+ * (REMIND_ADMINS) готовые сообщения блоками «Райтеры» / «КВ» / «Дизайн» — по одному на человека в каждом блоке.
  *
  * Свойства скрипта:
  *   SMM_SHEET_ID    — ID Google-таблицы контент-плана (из её адреса …/spreadsheets/d/<ID>/edit)   (обязательно)
@@ -20,9 +20,9 @@
 const REMIND_TZ = 'Europe/Moscow';
 const ALIAS_SHEET = 'Ники для напоминаний';
 const ROLES_ = [
-  { head: 'текст', nom: 'текст', dat: 'тексту', acc: 'текст' },
-  { head: 'вычитка', nom: 'вычитка', dat: 'вычитке', acc: 'вычитку' },
-  { head: 'дизайн', nom: 'диз', dat: 'дизу', acc: 'диз' },
+  { head: 'текст', nom: 'текст', dat: 'тексту', acc: 'текст', group: '✍️ Райтеры' },
+  { head: 'вычитка', nom: 'вычитка', dat: 'вычитке', acc: 'вычитку', group: '🔍 КВ (креативная вычитка)' },
+  { head: 'дизайн', nom: 'диз', dat: 'дизу', acc: 'диз', group: '🎨 Дизайн' },
 ];
 const OFFSETS_ = [3, 1, 0]; // за сколько дней напоминать
 
@@ -73,9 +73,13 @@ function sendDigest_(chatId, msgs, dayShift) {
     tg_('sendMessage', {
       chat_id: chatId, parse_mode: 'HTML',
       text: '📋 <b>Напоминания на ' + day + '</b> — ' + msgs.items.length + ' ' + plural_(msgs.items.length, 'сообщение', 'сообщения', 'сообщений') +
+        '\n' + msgs.groups.map(function (g) { return g.title + ': ' + g.items.length; }).join(' · ') +
         '\nПерешли их активистам 👇',
     });
-    msgs.items.forEach(function (it) { tg_('sendMessage', { chat_id: chatId, text: it.text, disable_web_page_preview: true }); });
+    msgs.groups.forEach(function (g) {
+      tg_('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: '<b>' + esc_(g.title) + '</b> — ' + g.items.length });
+      g.items.forEach(function (it) { tg_('sendMessage', { chat_id: chatId, text: it.text, disable_web_page_preview: true }); });
+    });
   }
   if (msgs.unknown.length) {
     tg_('sendMessage', {
@@ -164,7 +168,7 @@ function planTasks_() {
   return out;
 }
 
-// Сообщения на день (dayShift: 0 — сегодня, 1 — завтра). Одно сообщение на человека.
+// Сообщения на день (dayShift: 0 — сегодня, 1 — завтра), сгруппированные по ролям.
 function buildReminders_(dayShift) {
   const base = addDays_(today_(), dayShift || 0);
   const dayKey = function (n) { return Utilities.formatDate(addDays_(base, n), REMIND_TZ, 'yyyy-MM-dd'); };
@@ -173,7 +177,7 @@ function buildReminders_(dayShift) {
 
   const members = loadMembers_();
   const known = aliases_();
-  const byPerson = {};
+  const byRole = {};   // роль → человек → задачи
   const unknown = {};
   planTasks_().forEach(function (t) {
     if (!(t.deadline in when)) return;
@@ -181,15 +185,22 @@ function buildReminders_(dayShift) {
       const nick = resolveNick_(name, members, known);
       if (!nick) unknown[name] = true;
       const key = nick ? '@' + nick : name;
-      (byPerson[key] = byPerson[key] || []).push({ topic: t.topic, role: t.role, days: when[t.deadline] });
+      const r = byRole[t.role.head] = byRole[t.role.head] || {};
+      (r[key] = r[key] || []).push({ topic: t.topic, role: t.role, days: when[t.deadline] });
     });
   });
 
-  const items = Object.keys(byPerson).map(function (who) {
-    const tasks = byPerson[who].sort(function (a, b) { return a.days - b.days; });
-    return { who: who, text: reminderText_(who, tasks) };
-  }).sort(function (a, b) { return a.who.localeCompare(b.who); });
-  return { items: items, unknown: Object.keys(unknown) };
+  // Группы по ролям (Райтеры → КВ → Дизайн), внутри — одно сообщение на человека
+  const groups = ROLES_.filter(function (role) { return byRole[role.head]; }).map(function (role) {
+    const people = byRole[role.head];
+    const items = Object.keys(people).map(function (who) {
+      const tasks = people[who].sort(function (a, b) { return a.days - b.days; });
+      return { who: who, text: reminderText_(who, tasks) };
+    }).sort(function (a, b) { return a.who.localeCompare(b.who); });
+    return { title: role.group, items: items };
+  });
+  const items = [].concat.apply([], groups.map(function (g) { return g.items; }));
+  return { groups: groups, items: items, unknown: Object.keys(unknown) };
 }
 
 /* ===================== шаблоны ===================== */
