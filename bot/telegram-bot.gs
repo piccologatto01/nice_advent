@@ -151,7 +151,7 @@ function onMessage_(msg) {
 
 // HTML-виджет карточки (как на скриншоте анкеты). Ограничения Telegram: ≤32 КБ, ≤4 КБ в сжатом виде,
 // без загрузки из сети (картинки только data:); ссылки — через TelegramWidget.openLink / openTelegramLink.
-// Сетка: 3 равные колонки, все отступы одинаковые (G), широкие ячейки занимают ровно 2 колонки + промежуток.
+// Цвета: белый фон, розовые ячейки, голубые — кликабельные. Сетка: 3 равные колонки, все отступы одинаковые (G), широкие ячейки занимают ровно 2 колонки + промежуток.
 function memberWidget_(m, prof) {
   const G = 8;
   prof = prof || {};
@@ -171,18 +171,18 @@ function memberWidget_(m, prof) {
   const phone = empty_(m.phone) ? '' : 'tel:' + String(m.phone).replace(/[^+\d]/g, '');
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
     '*{box-sizing:border-box}html,body{margin:0}' +
-    'body{background:#182633;color:#eef1f4;font:500 14px/1.25 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}' +
+    'body{background:#ffffff;color:#2a2f45;font:500 14px/1.25 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}' +
     '.w{padding:' + G + 'px}' +
     '.h{display:flex;align-items:center;margin-bottom:' + G + 'px}' +
-    '.a{flex:none;width:48px;height:48px;border-radius:24px;margin-right:12px;background:#2f3c4b center/cover no-repeat;' +
-    'font-weight:700;font-size:20px;line-height:48px;text-align:center}' +
+    '.a{flex:none;width:48px;height:48px;border-radius:24px;margin-right:12px;background:#f9cfdd center/cover no-repeat;border:2px solid #9cc2f2;' +
+    'color:#d0507e;font-weight:700;font-size:20px;line-height:44px;text-align:center}' +
     '.t{min-width:0}.n{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-    '.u{color:#8a94a0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.u{color:#5a8ad6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.r{display:flex}.r+.r{margin-top:' + G + 'px}' +
     '.c{flex:1 1 0;min-width:0;margin-left:' + G + 'px}.c:first-child{margin-left:0}.s{flex:2 1 ' + G + 'px}' +
-    '.f{height:100%;background:#28323e;border-radius:12px;padding:8px 10px 9px}' +
-    '.l{font-size:12px;line-height:15px;height:15px;color:#8a94a0;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-    '.v{line-height:18px;height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k{cursor:pointer}' +
+    '.f{height:100%;background:#fdedf3;border-radius:12px;padding:8px 10px 9px}.f.k{background:#e8f1fd}' +
+    '.l{font-size:12px;line-height:15px;height:15px;color:#d0507e;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.v{line-height:18px;height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k{cursor:pointer}.k .l{color:#4f80cf}' +
     '</style></head><body><div class="w">' +
     '<div class="h">' + ava + '<div class="t"><div class="n">' + esc_(name) + '</div>' +
     (sub ? '<div class="u"' + (empty_(m.telegram) ? '' : ' data-l="' + esc_(tgLink_(m.telegram)) + '"') + '>' + esc_(sub) + '</div>' : '') +
