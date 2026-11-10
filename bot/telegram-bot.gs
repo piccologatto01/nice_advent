@@ -162,7 +162,9 @@ function memberWidget_(m, prof) {
     return '<div class="c' + (span === 2 ? ' s' : '') + '"><div class="f' + (a ? ' k' : '') + '"' + a + '>' +
       '<div class="l">' + label + '</div><div class="v">' + v(value) + '</div></div></div>';
   };
-  const row = function () { return '<div class="r">' + Array.prototype.join.call(arguments, '') + '</div>'; };
+  // отступ между строками — отдельным классом (движок Telegram не понимает селектор «+»)
+  let rowN = 0;
+  const row = function () { return '<div class="r' + (rowN++ ? ' m' : '') + '">' + Array.prototype.join.call(arguments, '') + '</div>'; };
   const name = prof.name || [m.first, m.last].filter(function (x) { return !empty_(x); }).join(' ') || at_(m.telegram) || 'Участник';
   const sub = [empty_(m.telegram) ? '' : at_(m.telegram), empty_(m.role) ? '' : m.role].filter(String).join(' · ');
   const ava = prof.photo
@@ -174,13 +176,13 @@ function memberWidget_(m, prof) {
     'body{background:#ffffff;color:#2a2f45;font:500 14px/1.25 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}' +
     '.w{padding:' + G + 'px}' +
     '.h{display:flex;align-items:center;margin-bottom:' + G + 'px}' +
-    '.a{flex:none;width:48px;height:48px;border-radius:24px;margin-right:12px;background:#f9cfdd center/cover no-repeat;border:2px solid #9cc2f2;' +
+    '.a{box-sizing:content-box;flex:none;width:44px;height:44px;border-radius:24px;margin-right:12px;background:#f9cfdd center/cover no-repeat;border:2px solid #9cc2f2;' +
     'color:#d0507e;font-weight:700;font-size:20px;line-height:44px;text-align:center}' +
     '.t{min-width:0}.n{font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.u{color:#5a8ad6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-    '.r{display:flex}.r+.r{margin-top:' + G + 'px}' +
+    '.r{display:flex;height:54px}.m{margin-top:' + G + 'px}' +
     '.c{flex:1 1 0;min-width:0;margin-left:' + G + 'px}.c:first-child{margin-left:0}.s{flex:2 1 ' + G + 'px}' +
-    '.f{height:100%;background:#fdedf3;border-radius:12px;padding:8px 10px 9px}.f.k{background:#e8f1fd}' +
+    '.f{box-sizing:content-box;height:37px;overflow:hidden;background:#fdedf3;border-radius:12px;padding:8px 10px 9px}.f.k{background:#e8f1fd}' +
     '.l{font-size:12px;line-height:15px;height:15px;color:#d0507e;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.v{line-height:18px;height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k{cursor:pointer}.k .l{color:#4f80cf}' +
     '</style></head><body><div class="w">' +
@@ -189,9 +191,9 @@ function memberWidget_(m, prof) {
     '</div></div>' +
     row(c('Фамилия', m.last), c('Имя', m.first), c('Отчество', m.middle)) +
     row(c('Дата рождения', m.birth), c('Знак зодиака', m.zodiac), c('Группа', m.group)) +
-    row(c('Форма обучения', m.form), c('Размер', m.size), c('Метро', m.metro)) +
+    row(c('Обучение', m.form), c('Размер', m.size), c('Метро', m.metro)) +
     row(c('Телефон', m.phone, 1, phone), c('Почта', m.email, 2, empty_(m.email) ? '' : 'mailto:' + m.email)) +
-    row(c('Инстаграм', at_(m.instagram), 1, igLink_(m.instagram)), c('Дата вступления', m.joined), c('Дата ухода', m.left)) +
+    row(c('Инстаграм', at_(m.instagram), 1, igLink_(m.instagram)), c('Вступление', m.joined), c('Уход', m.left)) +
     '</div><script>' +
     'document.querySelectorAll("[data-l]").forEach(function(e){e.addEventListener("click",function(){' +
     'var u=e.getAttribute("data-l"),W=window.TelegramWidget;if(!W)return;' +
