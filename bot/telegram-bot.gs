@@ -131,10 +131,40 @@ function onMessage_(msg) {
   const key = handle_(m.telegram) || m.last;
   const cardUrl = (P.getProperty('CARD_URL') || DEFAULT_CARD_URL) +
     '?u=' + encodeURIComponent(key) + '&api=' + encodeURIComponent(P.getProperty('WEBAPP_URL') || '');
-  return reply({
-    text: memberMessage_(m),
-    reply_markup: { inline_keyboard: [[{ text: '🪪 Открыть карточку', web_app: { url: cardUrl } }]] },
-  });
+  const markup = { inline_keyboard: [[{ text: '🪪 Открыть карточку', web_app: { url: cardUrl } }]] };
+
+  // Rich Message (Bot API 10.1): карточка прямо в чате. Если с фото не вышло — пробуем без фото,
+  // если не вышло совсем (старый клиент/ошибка) — обычное сообщение.
+  const photo = empty_(m.photo) ? tgAvatar_(m.telegram) : m.photo;
+  const tries = photo ? [memberRich_(m, photo), memberRich_(m, '')] : [memberRich_(m, '')];
+  for (let i = 0; i < tries.length; i++) {
+    const r = tg_('sendRichMessage', { chat_id: msg.chat.id, rich_message: { html: tries[i] }, reply_markup: markup });
+    if (r && r.ok) return r;
+    console.warn('sendRichMessage: ' + JSON.stringify(r));
+  }
+  return reply({ text: memberMessage_(m), reply_markup: markup });
+}
+
+// HTML для Rich Message: заголовок, роль, фото и таблица полей
+function memberRich_(m, photo) {
+  const fio = [m.last, m.first, m.middle].filter(function (x) { return !empty_(x); }).join(' ');
+  const v = function (x) { return empty_(x) ? '—' : esc_(x); };
+  const link = function (url, label) { return empty_(label) ? '—' : '<a href="' + esc_(url) + '">' + esc_(label) + '</a>'; };
+  const row = function (label, value) { return '<tr><th>' + label + '</th><td>' + value + '</td></tr>'; };
+  let h = '<h2>' + esc_(m.nick || fio || 'Участник') + '</h2>';
+  if (!empty_(m.role)) h += '<p><i>' + esc_(m.role) + '</i></p>';
+  if (photo) h += '<img src="' + esc_(photo) + '">';
+  h += '<table>' +
+    row('Фамилия', v(m.last)) + row('Имя', v(m.first)) + row('Отчество', v(m.middle)) +
+    row('Дата рождения', v(m.birth)) + row('Знак зодиака', v(m.zodiac)) +
+    row('Группа', v(m.group)) + row('Форма обучения', v(m.form)) +
+    row('Телефон', v(m.phone)) + row('Почта', v(m.email)) +
+    row('Инстаграм', link(igLink_(m.instagram), at_(m.instagram))) +
+    row('Телеграм', link(tgLink_(m.telegram), at_(m.telegram))) +
+    row('Размер', v(m.size)) + row('Метро', v(m.metro)) +
+    row('Дата вступления', v(m.joined)) + row('Дата ухода', v(m.left)) +
+    '</table>';
+  return h;
 }
 
 function memberMessage_(m) {
