@@ -110,6 +110,14 @@ function onMessage_(msg) {
     return tg_('sendMessage', Object.assign({ chat_id: msg.chat.id, parse_mode: 'HTML', disable_web_page_preview: true }, body));
   };
 
+  rememberAdmin_(msg); // админы напоминаний: запоминаем чат, чтобы присылать рассылку
+
+  const rc = text.match(/^(?:!напоминания|\/remind)(?:@\w+)?\s*(.*)$/i);
+  if (rc) {
+    if (msg.chat.type !== 'private' || !isRemindAdmin_(msg.from)) return reply({ text: '🔒 Напоминания доступны только админам СММ.' });
+    return onRemindCommand_(msg, rc[1]);
+  }
+
   if (/^\/start\b/.test(text)) {
     return reply({
       text: '🎁 Привет! Здесь живёт новогодний адвент — открывай по одной коробочке каждый день.',
