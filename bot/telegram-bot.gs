@@ -133,8 +133,12 @@ function onMessage_(msg) {
     '?u=' + encodeURIComponent(key) + '&api=' + encodeURIComponent(P.getProperty('WEBAPP_URL') || '');
   const markup = { inline_keyboard: [[{ text: '🪪 Открыть карточку', web_app: { url: cardUrl } }]] };
 
-  // Rich Message (Bot API 10.1): карточка прямо в чате. Если с фото не вышло — пробуем без фото,
-  // если не вышло совсем (старый клиент/ошибка) — обычное сообщение.
+  // 1) HTML-виджет (Bot API 10.4): карточка с собственной вёрсткой прямо в чате
+  const w = tg_('sendWidget', { chat_id: msg.chat.id, html: memberWidget_(m) });
+  if (w && w.ok) return w;
+  console.warn('sendWidget: ' + JSON.stringify(w));
+
+  // 2) Rich Message (Bot API 10.1). Если с фото не вышло — без фото, 3) не вышло совсем — обычное сообщение.
   const photo = empty_(m.photo) ? tgAvatar_(m.telegram) : m.photo;
   const tries = photo ? [memberRich_(m, photo), memberRich_(m, '')] : [memberRich_(m, '')];
   for (let i = 0; i < tries.length; i++) {
@@ -143,6 +147,42 @@ function onMessage_(msg) {
     console.warn('sendRichMessage: ' + JSON.stringify(r));
   }
   return reply({ text: memberMessage_(m), reply_markup: markup });
+}
+
+// HTML-виджет карточки (как на скриншоте анкеты). Ограничения Telegram: ≤32 КБ, ≤4 КБ в сжатом виде,
+// без загрузки из сети; ссылки — через TelegramWidget.openLink / openTelegramLink.
+function memberWidget_(m) {
+  const v = function (x) { return empty_(x) ? '-' : esc_(x); };
+  const f = function (label, value, cls, href) {
+    const a = href && !empty_(value) ? ' data-l="' + esc_(href) + '"' : '';
+    return '<div class="f' + (cls ? ' ' + cls : '') + (a ? ' k' : '') + '"' + a + '><div class="l">' + label + '</div><div class="v">' + v(value) + '</div></div>';
+  };
+  const row = function () { return '<div class="r">' + Array.prototype.join.call(arguments, '') + '</div>'; };
+  const title = title_(m);
+  const letter = esc_((m.first || title.replace('@', '') || '?').charAt(0).toUpperCase());
+  const phone = empty_(m.phone) ? '' : 'tel:' + String(m.phone).replace(/[^+\d]/g, '');
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+    'body{margin:0;background:#182633;color:#eef1f4;font:500 13px/1.25 -apple-system,system-ui,Roboto,sans-serif}' +
+    '.w{padding:10px 8px}.h{display:flex;align-items:center;padding:0 2px 9px}' +
+    '.a{width:42px;height:42px;border-radius:21px;background:#2f3c4b;color:#eef1f4;font-weight:700;font-size:18px;text-align:center;line-height:42px;margin-right:10px}' +
+    '.n{font-weight:700;font-size:16px}.ro{color:#8a94a0;font-size:13px;margin-top:2px}' +
+    '.r{display:flex;margin-bottom:5px}.f{flex:1;min-width:0;background:#28323e;border-radius:9px;padding:6px 6px 7px;margin-right:5px}.f:last-child{margin-right:0}' +
+    '.g{margin-top:9px}.l{font-size:11px;color:#8a94a0;margin-bottom:4px}.v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k{cursor:pointer}' +
+    '</style></head><body><div class="w">' +
+    '<div class="h"><div class="a">' + letter + '</div><div><div class="n">' + esc_(title) + '</div>' + (empty_(m.role) ? '' : '<div class="ro">' + esc_(m.role) + '</div>') + '</div></div>' +
+    row(f('Фамилия', m.last), f('Имя', m.first), f('Отчество', m.middle)) +
+    '<div class="g"></div>' +
+    row(f('Дата рождения', m.birth), f('Знак зодиака', m.zodiac)) +
+    row(f('Группа', m.group), f('Форма обучения', m.form)) +
+    row(f('Телефон', m.phone, '', phone), f('Почта', m.email, '', empty_(m.email) ? '' : 'mailto:' + m.email)) +
+    row(f('Инстаграм', at_(m.instagram), '', igLink_(m.instagram)), f('Телеграм', at_(m.telegram), '', tgLink_(m.telegram))) +
+    row(f('Размер', m.size), f('Метро', m.metro)) +
+    row(f('Дата вступления', m.joined), f('Дата ухода', m.left)) +
+    '</div><script>' +
+    'document.querySelectorAll("[data-l]").forEach(function(e){e.addEventListener("click",function(){' +
+    'var u=e.getAttribute("data-l"),W=window.TelegramWidget;if(!W)return;' +
+    'try{if(u.indexOf("https://t.me/")===0&&W.openTelegramLink)W.openTelegramLink(u);else W.openLink(u)}catch(x){}})})' +
+    '</script></body></html>';
 }
 
 // HTML для Rich Message: заголовок, роль, фото и таблица полей
